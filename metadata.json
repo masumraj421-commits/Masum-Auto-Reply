@@ -1,0 +1,6 @@
+{
+  "name": "Masum Auto Reply",
+  "description": "Facebook Page Messenger inbox & comment auto-reply automation SaaS with Bengali-first interface and Meta Graph API integration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
