@@ -27,14 +27,14 @@ data class AutomationUiState(
     val isMessengerEnabled: Boolean = true,
     val isCommentEnabled: Boolean = true,
     val connectedPage: FacebookPage? = FacebookPage(
-        id = "102938475610293",
-        name = "Masum Tech & Fashion Zone",
-        category = "E-commerce & Retail Page",
+        id = "vawalfreshfood",
+        name = "Vawal Fresh Food (ভাওয়াল ফ্রেশ ফুড)",
+        category = "Organic Agro & Fresh Food Store",
         accessToken = "EAABwzLIX4nwBO1kX9mK8j3p82n4Z...",
-        followersCount = 48520,
-        profilePicUrl = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+        followersCount = 18500,
+        profilePicUrl = "https://images.unsplash.com/photo-1542838132-92c53300491e?w=150",
         isConnected = true,
-        tokenExpiresAt = "Never (Never-expiring Page Access Token)",
+        tokenExpiresAt = "Valid & Active (Page Token for @vawalfreshfood)",
         permissions = listOf(
             "pages_show_list",
             "pages_read_engagement",
@@ -374,43 +374,43 @@ class AutomationRepository {
 private fun defaultMessengerRules(): List<MessengerRule> = listOf(
     MessengerRule(
         id = "m_rule_1",
-        name = "পণ্যের দাম ও ক্যাটালগ (Price Inquiry)",
-        keywords = listOf("দাম", "price", "কত", "rate", "cost", "টাকা"),
-        replyText = "আসসালামু আলাইকুম {user_name}! আমাদের সকল প্রিমিয়াম প্রডাক্টের দাম ও ক্যাটালগ দেখতে এই লিংকে ভিজিট করুন: https://masumshop.com/catalog । এছাড়া যেকোনো নির্দিষ্ট মডেল জানতে ছবি ইনবক্সে পাঠান!",
+        name = "পণ্যের মূল্য তালিকা ও খাঁটি খাবার (Price & Catalog)",
+        keywords = listOf("দাম", "price", "কত", "তেল", "ঘি", "মধু", "চাল", "ফুড"),
+        replyText = "আসসালামু আলাইকুম {user_name}! ভাওয়াল ফ্রেশ ফুডে (Vawal Fresh Food) স্বাগতম। আমাদের ঘানি ভাঙা খাঁটি সরিষার তেল, গাওয়া ঘি, সুন্দরবনের প্রাকৃতিক মধু ও নিরাপদ অর্গানিক পণ্যের অফার মূল্য জানতে মেসেজ দিন অথবা ফেসবুক পেজ ভিজিট করুন: facebook.com/vawalfreshfood । আপনার কী পণ্য প্রয়োজন লিখে জানান!",
         isEnabled = true,
-        matchCount = 892
+        matchCount = 1240
     ),
     MessengerRule(
         id = "m_rule_2",
         name = "ডেলিভারি চার্জ ও সময় (Delivery Info)",
-        keywords = listOf("delivery", "ডেলিভারি", "চার্জ", "কবে পাব", "কুরিয়ার"),
-        replyText = "ধন্যবাদ {user_name}! সারাদেশে ক্যাশ অন ডেলিভারি (Cash on Delivery) সুবিধা রয়েছে। ঢাকার ভেতরে ডেলিভারি চার্জ ৭০ টাকা (২৪-৪৮ ঘণ্টার মধ্যে), ঢাকার বাইরে ১৩০ টাকা (২-৩ কার্যদিবস)।",
+        keywords = listOf("delivery", "ডেলিভারি", "চার্জ", "কবে পাব", "কুরিয়ার", "ক্যাশ অন"),
+        replyText = "ধন্যবাদ {user_name}! ভাওয়াল ফ্রেশ ফুড সারাদেশে ক্যাশ অন ডেলিভারি (Cash on Delivery) সুবিধা দেয়। ঢাকার ভেতরে ডেলিভারি চার্জ মাত্র ৭০ টাকা (২৪-৪৮ ঘণ্টার মধ্যে), ঢাকার বাইরে ১৩০ টাকা (২-৩ কার্যদিবস)।",
         isEnabled = true,
-        matchCount = 421
+        matchCount = 680
     ),
     MessengerRule(
         id = "m_rule_3",
         name = "অর্ডার করার নিয়ম (How to Order)",
-        keywords = listOf("order", "অর্ডার", "কিনব", "চাই", "কিনতে চাই"),
-        replyText = "অর্ডার নিশ্চিত করতে অনুগ্রহ করে আপনার: ১. পুরো নাম, ২. ডেলিভারি ঠিকানা এবং ৩. মোবাইল নাম্বার লিখে পাঠান। আমাদের টিম কনফার্মেশন কল করবে!",
+        keywords = listOf("order", "অর্ডার", "কিনব", "চাই", "কিনতে চাই", "নেব"),
+        replyText = "খাঁটি পণ্য অর্ডার করতে অনুগ্রহ করে আপনার: ১. পণ্যের নাম ও পরিমাণ, ২. পুরো নাম, ৩. সম্পূর্ণ ঠিকানা এবং ৪. মোবাইল নাম্বার লিখে পাঠান। আমাদের টিম কনফার্মেশন কল করে দ্রুত পার্সেল পাঠাবে!",
         isEnabled = true,
-        matchCount = 310
+        matchCount = 490
     ),
     MessengerRule(
         id = "m_rule_4",
-        name = "শোরুমের ঠিকানা ও লোকেশন (Store Location)",
-        keywords = listOf("ঠিকানা", "location", "address", "দোকান", "শোরুম", "কোথায়"),
-        replyText = "আমাদের শোরুমের ঠিকানা: বাড়ি নং ৪২, লেক সার্কাস, কলাবাগান/ধানমন্ডি, ঢাকা-১২০৫। প্রতিদিন সকাল ১০টা থেকে রাত ৮টা পর্যন্ত খোলা থাকে।",
+        name = "ফার্ম ও শোরুমের ঠিকানা (Farm & Location)",
+        keywords = listOf("ঠিকানা", "location", "address", "দোকান", "কোথায়", "গাজীপুর", "ভাওয়াল"),
+        replyText = "ভাওয়াল ফ্রেশ ফুডের প্রধান কেন্দ্র: ভাওয়াল পরগনা, গাজীপুর ও ঢাকা অফিস। আমরা সরাসরি কৃষকের মাঠ ও নিজস্ব তত্ত্বাবধানে সংগ্রহ করে বিশুদ্ধ খাবার ভোক্তার কাছে পৌঁছে দিই।",
         isEnabled = true,
-        matchCount = 145
+        matchCount = 210
     ),
     MessengerRule(
         id = "m_rule_5",
-        name = "কাস্টমার সাপোর্ট ও হটলাইন (Hotline Support)",
+        name = "হটলাইন ও কাস্টমার কেয়ার (Hotline Support)",
         keywords = listOf("support", "কথা বলব", "কল", "নাম্বার", "হেল্প"),
-        replyText = "আমাদের কাস্টমার কেয়ার প্রতিনিধির সাথে সরাসরি কথা বলতে ডায়াল করুন: +880 1711-223344 (সকাল ৯টা - রাত ১০টা)। আমরা সর্বদা আপনার সেবায় নিয়োজিত!",
+        replyText = "ভাওয়াল ফ্রেশ ফুডের প্রতিনিধির সাথে সরাসরি কথা বলতে ডায়াল করুন: +880 1700-000000 (সকাল ৯টা - রাত ১০টা)। আমরা সর্বদা আপনার স্বাস্থ্যসম্মত খাবারের সেবায় নিয়োজিত!",
         isEnabled = true,
-        matchCount = 74
+        matchCount = 95
     )
 )
 
@@ -418,20 +418,20 @@ private fun defaultWelcomeRule(): MessengerRule = MessengerRule(
     id = "m_welcome",
     name = "স্বাগতম মেসেজ (Welcome Message)",
     keywords = emptyList(),
-    replyText = "আসসালামু আলাইকুম {user_name}! মাছুম টেক অ্যান্ড ফ্যাশন জোনে আপনাকে স্বাগতম। আপনি কীভাবে আপনাকে সাহায্য করতে পারি? আপনার পছন্দের পণ্য বা প্রশ্ন লিখে জানান।",
+    replyText = "আসসালামু আলাইকুম {user_name}! ভাওয়াল ফ্রেশ ফুডে (Vawal Fresh Food) আপনাকে স্বাগতম। আমরা খাঁটি ও নিরাপদ খাবার আপনার পরিবারের কাছে পৌঁছে দিতে প্রতিশ্রুতিবদ্ধ। কীভাবে আপনাকে সাহায্য করতে পারি?",
     isWelcomeMessage = true,
     isEnabled = true,
-    matchCount = 612
+    matchCount = 890
 )
 
 private fun defaultFallbackMessengerRule(): MessengerRule = MessengerRule(
     id = "m_fallback",
     name = "ডিফল্ট রিপ্লাই (Default Fallback)",
     keywords = emptyList(),
-    replyText = "ধন্যবাদ {user_name} আপনার বার্তার জন্য! আমাদের সাপোর্ট টিম কিছুক্ষণের মধ্যেই আপনার বার্তার উত্তর দেবে। জরুরি প্রয়োজনে আমাদের হটলাইনে কল করতে পারেন: 01711-223344।",
+    replyText = "ধন্যবাদ {user_name} ভাওয়াল ফ্রেশ ফুডে বার্তার জন্য! আমাদের প্রতিনিধি কিছুক্ষণের মধ্যেই আপনার বার্তার উত্তর দেবেন। জরুরি প্রয়োজনে পেজে চোখ রাখুন: facebook.com/vawalfreshfood।",
     isDefaultFallback = true,
     isEnabled = true,
-    matchCount = 203
+    matchCount = 310
 )
 
 private fun defaultCommentRules(): List<CommentRule> = listOf(

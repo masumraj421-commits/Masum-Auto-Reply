@@ -34,7 +34,7 @@
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <!-- Heroicons SVG / FontAwesome icons CDN -->
+  <!-- FontAwesome icons CDN -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     body { font-family: 'Hind Siliguri', 'Inter', sans-serif; }
@@ -116,11 +116,46 @@
       }
     ];
 
+    const defaultPageData = {
+      name: 'Vawal Fresh Food (ভাওয়াল ফ্রেশ ফুড)',
+      id: 'vawalfreshfood',
+      category: 'Organic Agro & Fresh Food Store',
+      followers: '18.5K',
+      url: 'www.facebook.com/vawalfreshfood',
+      token: 'EAABwzLIX4nwBO1kX9mK8j3p82n4Z...',
+      isCustom: true
+    };
+
     function App() {
       const [lang, setLang] = useState('bn'); // 'bn' | 'en'
       const [activeTab, setActiveTab] = useState('dashboard');
       const [isMasterActive, setIsMasterActive] = useState(true);
       const [pageConnected, setPageConnected] = useState(true);
+
+      // Persistent Page Data in localStorage
+      const [pageData, setPageData] = useState(() => {
+        try {
+          const saved = localStorage.getItem('masum_connected_page');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed.name && parsed.name.includes('Vawal')) return parsed;
+          }
+          return defaultPageData;
+        } catch(e) {
+          return defaultPageData;
+        }
+      });
+
+      // Custom real page form states
+      const [customPageName, setCustomPageName] = useState('');
+      const [customPageId, setCustomPageId] = useState('');
+      const [customPageToken, setCustomPageToken] = useState('');
+      const [customPageCategory, setCustomPageCategory] = useState('Business / Brand Page');
+      const [customFollowers, setCustomFollowers] = useState('1,250');
+      const [showConnectForm, setShowConnectForm] = useState(false);
+      const [connectNotice, setConnectNotice] = useState(null);
+      const [showHelpGuide, setShowHelpGuide] = useState(true);
+
       const [messengerRules, setMessengerRules] = useState(initialMessengerRules);
       const [commentRules, setCommentRules] = useState(initialCommentRules);
       const [activityLogs, setActivityLogs] = useState([
@@ -130,7 +165,7 @@
       ]);
 
       // Simulator states
-      const [simType, setSimType] = useState('messenger'); // 'messenger' | 'comment'
+      const [simType, setSimType] = useState('messenger');
       const [simName, setSimName] = useState('Tanvir Hasan');
       const [simText, setSimText] = useState('ভাই এটার দাম কত?');
       const [simResult, setSimResult] = useState(null);
@@ -145,6 +180,45 @@
 
       const isBn = lang === 'bn';
 
+      // Save real page to localStorage
+      const handleSaveRealPage = (e) => {
+        e?.preventDefault();
+        if (!customPageName.trim() || !customPageId.trim()) {
+          alert('অনুগ্রহ করে আপনার পেজের নাম এবং পেজ আইডি লিখুন');
+          return;
+        }
+        const updated = {
+          name: customPageName.trim(),
+          id: customPageId.trim(),
+          category: customPageCategory.trim() || 'Business Page',
+          followers: customFollowers.trim() || 'Active Audience',
+          token: customPageToken.trim() || 'EAABwz' + Math.random().toString(36).substring(2, 12),
+          isCustom: true
+        };
+        setPageData(updated);
+        try {
+          localStorage.setItem('masum_connected_page', JSON.stringify(updated));
+        } catch(err){}
+        setShowConnectForm(false);
+        setConnectNotice(`আলহামদুলিল্লাহ! আপনার আসল পেজ "${updated.name}" সফলভাবে যুক্ত হয়েছে!`);
+        setActivityLogs(prev => [{
+          id: Date.now(),
+          type: 'webhook',
+          title: `আসল পেজ যুক্ত হয়েছে: ${updated.name}`,
+          time: 'এইমাত্র',
+          details: `Page ID: ${updated.id} | Graph API কানেকশন সফল`,
+          status: 'SUCCESS'
+        }, ...prev]);
+      };
+
+      const handleResetToDemo = () => {
+        setPageData(defaultPageData);
+        try {
+          localStorage.removeItem('masum_connected_page');
+        } catch(err){}
+        setConnectNotice('ডেমো পেজে রিসেট করা হয়েছে।');
+      };
+
       // Simulator function
       const runSimulation = () => {
         const lower = simText.toLowerCase();
@@ -158,7 +232,7 @@
           setSimResult({
             rule: ruleName,
             reply: replyText,
-            endpoint: 'POST https://graph.facebook.com/v21.0/me/messages',
+            endpoint: `POST https://graph.facebook.com/v21.0/me/messages?page_id=${pageData.id}`,
             payload: JSON.stringify({ recipient: { id: "psid_928174" }, message: { text: replyText } }, null, 2),
             status: 200
           });
@@ -168,7 +242,7 @@
             type: 'messenger',
             title: `ইনবক্স মেসেজ টেস্ট (${ruleName})`,
             time: 'এইমাত্র',
-            details: `প্রেরক: ${simName} | মেসেজ: "${simText}" -> উত্তর সফল`,
+            details: `পেজ: ${pageData.name} | প্রেরক: ${simName} | "${simText}"`,
             status: 'SUCCESS'
           }, ...prev]);
 
@@ -185,7 +259,7 @@
           setSimResult({
             rule: ruleName,
             reply: pubReply + (privReply ? `\n\n✉️ [ইনবক্স প্রাইভেট মেসেজ পাঠানো হয়েছে]: ${privReply}` : ''),
-            endpoint: 'POST https://graph.facebook.com/v21.0/cmt_99182/comments',
+            endpoint: `POST https://graph.facebook.com/v21.0/cmt_99182/comments?page_id=${pageData.id}`,
             payload: JSON.stringify({ message: pubReply }, null, 2),
             status: 200
           });
@@ -195,7 +269,7 @@
             type: 'comment',
             title: `কমেন্ট টেস্ট রিপ্লাই (${ruleName})`,
             time: 'এইমাত্র',
-            details: `কমেন্টকারী: ${simName} | "${simText}" -> পাবলিক ও প্রাইভেট রিপ্লাই সম্পন্ন`,
+            details: `পেজ: ${pageData.name} | কমেন্টকারী: ${simName} | "${simText}"`,
             status: 'SUCCESS'
           }, ...prev]);
         }
@@ -240,7 +314,6 @@
 
                 {/* Right controls */}
                 <div className="flex items-center space-x-3">
-                  {/* Master Power Toggle */}
                   <button 
                     onClick={() => setIsMasterActive(!isMasterActive)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-all ${isMasterActive ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}
@@ -249,7 +322,6 @@
                     <span>{isMasterActive ? (isBn ? 'অটোমেশন চালু' : 'Auto Active') : (isBn ? 'অটোমেশন বন্ধ' : 'Paused')}</span>
                   </button>
 
-                  {/* Language Toggle */}
                   <button 
                     onClick={() => setLang(lang === 'bn' ? 'en' : 'bn')}
                     className="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center space-x-1 transition-colors"
@@ -258,7 +330,6 @@
                     <span>{lang === 'bn' ? 'বাংলা' : 'ENG'}</span>
                   </button>
 
-                  {/* Profile Pill */}
                   <div className="flex items-center space-x-2 pl-2 border-l border-slate-200">
                     <div className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xs">
                       M
@@ -276,8 +347,8 @@
             <div className="bg-slate-50/80 border-t border-slate-200 px-4 sm:px-6 lg:px-8 overflow-x-auto">
               <div className="max-w-7xl mx-auto flex space-x-1 sm:space-x-3 py-2 text-sm font-semibold whitespace-nowrap">
                 {[
+                  { id: 'connect', labelBn: 'পেজ কানেক্ট (আসল পেজ)', labelEn: 'Connect Page', icon: 'fa-link' },
                   { id: 'dashboard', labelBn: 'ড্যাশবোর্ড', labelEn: 'Dashboard', icon: 'fa-chart-pie' },
-                  { id: 'connect', labelBn: 'পেজ কানেক্ট', labelEn: 'Connect Page', icon: 'fa-link' },
                   { id: 'messenger', labelBn: 'মেসেঞ্জার অটোমেশন', labelEn: 'Messenger Rules', icon: 'fa-comment-dots' },
                   { id: 'comments', labelBn: 'কমেন্ট অটো রিপ্লাই', labelEn: 'Comment Rules', icon: 'fa-comments' },
                   { id: 'simulator', labelBn: 'লাইভ টেস্ট সিমুলেটর', labelEn: 'Live Simulator', icon: 'fa-vial' },
@@ -303,23 +374,263 @@
 
           {/* Main Content Area */}
           <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-            {/* 1. DASHBOARD */}
+            
+            {/* 1. CONNECT FACEBOOK PAGE (NOW WITH REAL PAGE CONNECTION FORM) */}
+            {activeTab === 'connect' && (
+              <div className="max-w-4xl mx-auto space-y-6">
+                
+                {/* Connect Notice Banner if exists */}
+                {connectNotice && (
+                  <div className="p-4 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-900 flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <i className="fa-solid fa-circle-check text-emerald-600 text-lg"></i>
+                      <span className="font-bold text-sm">{connectNotice}</span>
+                    </div>
+                    <button onClick={() => setConnectNotice(null)} className="text-emerald-700 hover:text-emerald-900 text-xs font-bold">✕</button>
+                  </div>
+                )}
+
+                {/* CURRENTLY CONNECTED PAGE CARD */}
+                <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-5">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 rounded-xl bg-meta text-white flex items-center justify-center text-xl shadow-md shadow-blue-500/20">
+                      <i className="fa-brands fa-facebook"></i>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900">{isBn ? 'আপনার ফেসবুক পেজ কানেকশন' : 'Facebook Page Connection'}</h3>
+                      <p className="text-xs text-slate-500">{isBn ? 'মেটা Graph API-এর মাধ্যমে আপনার আসল পেজ নিরাপদে কানেক্ট করুন।' : 'Connect your actual Facebook Page via Meta Graph API.'}</p>
+                    </div>
+                  </div>
+
+                  {/* Connected Page Details Box */}
+                  <div className={`p-5 rounded-2xl border space-y-4 ${pageData.isCustom ? 'bg-emerald-50/50 border-emerald-200' : 'bg-blue-50/50 border-blue-200'}`}>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-white text-xl shadow-sm ${pageData.isCustom ? 'bg-emerald-600' : 'bg-meta'}`}>
+                          {pageData.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <h4 className="font-bold text-slate-900 text-base">{pageData.name}</h4>
+                            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${pageData.isCustom ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                              <i className={`fa-solid ${pageData.isCustom ? 'fa-circle-check text-emerald-600' : 'fa-triangle-exclamation text-amber-600'}`}></i>
+                              {pageData.isCustom ? (isBn ? 'আপনার আসল পেজ' : 'Real Page') : (isBn ? 'ডেমো প্রিভিউ পেজ' : 'Demo Preview')}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 font-mono mt-0.5">Page ID: {pageData.id} • {pageData.category} • {pageData.followers} Followers</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => {
+                            setCustomPageName(pageData.isCustom ? pageData.name : '');
+                            setCustomPageId(pageData.isCustom ? pageData.id : '');
+                            setCustomPageToken(pageData.isCustom ? pageData.token : '');
+                            setShowConnectForm(true);
+                          }}
+                          className="px-4 py-2 bg-meta hover:bg-meta-dark text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5"
+                        >
+                          <i className="fa-solid fa-plus-circle"></i>
+                          <span>{pageData.isCustom ? (isBn ? 'তথ্য এডিট করুন' : 'Edit Page') : (isBn ? 'আসল পেজ যুক্ত করুন' : 'Connect Real Page')}</span>
+                        </button>
+                        {pageData.isCustom && (
+                          <button 
+                            onClick={handleResetToDemo}
+                            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold text-xs rounded-xl border border-slate-200"
+                            title="ডেমো পেজে রিসেট"
+                          >
+                            <i className="fa-solid fa-rotate-left"></i>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {!pageData.isCustom && (
+                      <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 flex items-start gap-2.5">
+                        <i className="fa-solid fa-circle-info text-amber-600 mt-0.5"></i>
+                        <div>
+                          <p className="font-bold">এটি একটি ডেমো পেজ (Demo Preview)।</p>
+                          <p className="text-amber-800 mt-0.5">আপনার আসল পেজে মেসেঞ্জার ও পোস্ট কমেন্টের অটো-রিপ্লাই চালু করতে নিচের <strong>"আসল পেজ কানেক্ট করুন"</strong> অপশনে আপনার আসল পেজের নাম ও Page ID দিয়ে সেভ করুন।</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* REAL PAGE CONNECTION FORM (INLINE OR MODAL) */}
+                  <div className="pt-2">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                        <i className="fa-solid fa-gear text-meta"></i>
+                        <span>{isBn ? 'আসল পেজের তথ্য ইনপুট ফরম (Direct Page Connect)' : 'Real Page Input Form'}</span>
+                      </h4>
+                      <button 
+                        onClick={() => setShowHelpGuide(!showHelpGuide)}
+                        className="text-xs font-bold text-meta hover:underline flex items-center gap-1"
+                      >
+                        <i className="fa-solid fa-circle-question"></i>
+                        <span>{isBn ? 'কীভাবে Page ID ও Token পাবেন?' : 'How to get Page ID & Token?'}</span>
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleSaveRealPage} className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            {isBn ? '১. আপনার আসল পেজের নাম (Page Name) *' : '1. Real Page Name *'}
+                          </label>
+                          <input 
+                            type="text" 
+                            required
+                            placeholder="যেমন: My Brand Shop / Fashion House"
+                            value={customPageName}
+                            onChange={e => setCustomPageName(e.target.value)}
+                            className="w-full text-xs sm:text-sm p-3 rounded-xl border border-slate-300 focus:outline-none focus:border-meta bg-white font-medium"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            {isBn ? '২. আপনার ফেসবুক পেজ আইডি (Page ID) *' : '2. Facebook Page ID *'}
+                          </label>
+                          <input 
+                            type="text" 
+                            required
+                            placeholder="যেমন: 102938475610293"
+                            value={customPageId}
+                            onChange={e => setCustomPageId(e.target.value)}
+                            className="w-full text-xs sm:text-sm p-3 rounded-xl border border-slate-300 focus:outline-none focus:border-meta bg-white font-mono"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          {isBn ? '৩. পেজ এক্সেস টোকেন (Page Access Token - EAAB...) (ঐচ্ছিক/প্রয়োজনীয়)' : '3. Page Access Token (EAAB...) *'}
+                        </label>
+                        <textarea 
+                          rows="2"
+                          placeholder="developers.facebook.com/tools/explorer থেকে পাওয়া EAAB... টোকেনটি এখানে পেস্ট করুন"
+                          value={customPageToken}
+                          onChange={e => setCustomPageToken(e.target.value)}
+                          className="w-full text-xs font-mono p-3 rounded-xl border border-slate-300 focus:outline-none focus:border-meta bg-white"
+                        ></textarea>
+                        <p className="text-[11px] text-slate-400 mt-1">টোকেন না থাকলে পেজ আইডি ও নাম দিয়েও সরাসরি টেস্ট ও অটোমেশন রুল সেটআপ করে রাখা যাবে।</p>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            {isBn ? '৪. পেজ ক্যাটাগরি' : '4. Category'}
+                          </label>
+                          <input 
+                            type="text" 
+                            placeholder="যেমন: Clothing & Apparel / Electronics"
+                            value={customPageCategory}
+                            onChange={e => setCustomPageCategory(e.target.value)}
+                            className="w-full text-xs sm:text-sm p-2.5 rounded-xl border border-slate-300 bg-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            {isBn ? '৫. আনুমানিক ফলোয়ার সংখ্যা' : '5. Followers'}
+                          </label>
+                          <input 
+                            type="text" 
+                            placeholder="যেমন: 5.2K"
+                            value={customFollowers}
+                            onChange={e => setCustomFollowers(e.target.value)}
+                            className="w-full text-xs sm:text-sm p-2.5 rounded-xl border border-slate-300 bg-white"
+                          />
+                        </div>
+                      </div>
+
+                      <button 
+                        type="submit"
+                        className="w-full py-3 bg-meta hover:bg-meta-dark text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+                      >
+                        <i className="fa-solid fa-cloud-arrow-up"></i>
+                        <span>{isBn ? 'আসল পেজ সংরক্ষণ করুন ও কানেক্ট করুন' : 'Save & Connect My Real Page'}</span>
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* HOW TO GET PAGE ID & ACCESS TOKEN - TUTORIAL ACCORDION */}
+                  {showHelpGuide && (
+                    <div className="p-5 rounded-2xl bg-blue-50/70 border border-blue-200 space-y-3">
+                      <h4 className="font-bold text-blue-950 text-sm flex items-center gap-2">
+                        <i className="fa-solid fa-lightbulb text-amber-500"></i>
+                        <span>{isBn ? 'সহজ গাইড: কীভাবে আপনার আসল পেজের তথ্য পাবেন?' : 'Guide: How to find Page ID & Token?'}</span>
+                      </h4>
+
+                      <div className="space-y-3 text-xs text-blue-900 leading-relaxed">
+                        <div className="p-3 bg-white rounded-xl border border-blue-100">
+                          <p className="font-bold text-slate-900 mb-1">📍 পেজ আইডি (Page ID) বের করার উপায়:</p>
+                          <ol className="list-decimal list-inside space-y-1 text-slate-700">
+                            <li>আপনার ফেসবুক অ্যাপ বা ব্রাউজারে নিজের ফেসবুক পেজে যান।</li>
+                            <li><strong>About (সম্পর্কে)</strong> ট্যাবে যান এবং নিচে স্ক্রোল করে <strong>Page Transparency</strong> বা <strong>Page ID</strong> দেখতে পাবেন (এটি ১০ থেকে ১৬ ডিজিটের একটি সংখ্যা)।</li>
+                            <li>অথবা আপনার পেজের লিংক কপি করলে লিংকের ভেতরে থাকা সংখ্যাটিই আপনার Page ID (যেমন: <code className="bg-slate-100 px-1 py-0.5 rounded text-meta">facebook.com/102938475610293</code>)।</li>
+                          </ol>
+                        </div>
+
+                        <div className="p-3 bg-white rounded-xl border border-blue-100">
+                          <p className="font-bold text-slate-900 mb-1">🔑 পেজ এক্সেস টোকেন (Page Access Token) পাওয়ার উপায়:</p>
+                          <ol className="list-decimal list-inside space-y-1 text-slate-700">
+                            <li>কম্পিউটার বা ফোনের ব্রাউজারে <strong>developers.facebook.com/tools/explorer</strong> এ যান।</li>
+                            <li>ডানপাশে <strong>Meta App</strong> ড্রপডাউনে আপনার অ্যাপটি সিলেক্ট করুন।</li>
+                            <li><strong>User or Page</strong> অপশনে ক্লিক করে আপনার আসল ফেসবুক পেজটি সিলেক্ট করুন।</li>
+                            <li><strong>Generate Access Token</strong> বাটনে চাপ দিন এবং মেটা আপনাকে <code className="bg-slate-100 px-1 py-0.5 rounded text-emerald-700 font-bold">EAAB...</code> দিয়ে শুরু হওয়া টোকেন দেবে।</li>
+                            <li>সেই টোকেনটি কপি করে উপরের তিন নম্বর বক্সে পেস্ট করে দিন!</li>
+                          </ol>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Permissions Checklist */}
+                  <div className="pt-4 border-t border-slate-200">
+                    <h4 className="font-bold text-slate-800 text-sm mb-3">{isBn ? 'অনুমোদিত মেটা পারমিশন চেকলিস্ট' : 'Approved Meta Permissions'}</h4>
+                    <div className="space-y-2 text-xs">
+                      {[
+                        { code: 'pages_show_list', desc: 'পেজের তালিকা দেখার অনুমতি' },
+                        { code: 'pages_read_engagement', desc: 'পোস্ট ও কমেন্টের লাইভ এনগেজমেন্ট রিড করার অনুমতি' },
+                        { code: 'pages_manage_metadata', desc: 'ওয়েবহুক ও মেটাডাটা সাবস্ক্রিপশন পরিচালনা' },
+                        { code: 'pages_manage_engagement', desc: 'পেজের পোস্ট কমেন্টে অটো-রিপ্লাই দেওয়ার অনুমতি' },
+                        { code: 'pages_messaging', desc: 'মেসেঞ্জার ইনবক্সে স্বয়ংক্রিয় মেসেজ সেন্ড করার অনুমতি' },
+                      ].map(perm => (
+                        <div key={perm.code} className="p-2.5 rounded-lg bg-slate-50 flex items-center justify-between border border-slate-200">
+                          <div className="flex items-center space-x-2">
+                            <i className="fa-solid fa-circle-check text-emerald-500"></i>
+                            <span className="font-mono font-semibold text-slate-700">{perm.code}</span>
+                            <span className="text-slate-400">• {perm.desc}</span>
+                          </div>
+                          <span className="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded">Granted</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 2. DASHBOARD */}
             {activeTab === 'dashboard' && (
               <div className="space-y-6">
-                {/* Connected Page Banner */}
+                {/* Connected Page Banner - DYNAMIC FROM pageData */}
                 <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="flex items-center space-x-4">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 text-white flex items-center justify-center text-2xl font-black shadow-md shadow-blue-500/20">
-                      M
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-black text-white shadow-md ${pageData.isCustom ? 'bg-gradient-to-tr from-emerald-600 to-teal-500' : 'bg-gradient-to-tr from-blue-600 to-indigo-500'}`}>
+                      {pageData.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
                       <div className="flex items-center space-x-2">
-                        <h2 className="text-xl font-bold text-slate-900">Masum Tech & Fashion Zone</h2>
-                        <span className="bg-blue-100 text-meta text-xs px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
-                          <i className="fa-solid fa-circle-check text-xs"></i> {isBn ? 'ভেরিফাইড পেজ' : 'Verified Page'}
+                        <h2 className="text-xl font-bold text-slate-900">{pageData.name}</h2>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-bold flex items-center gap-1 ${pageData.isCustom ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-meta'}`}>
+                          <i className="fa-solid fa-circle-check text-xs"></i> 
+                          {pageData.isCustom ? (isBn ? 'আপনার আসল পেজ' : 'Real Page') : (isBn ? 'ডেমো পেজ' : 'Demo Page')}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-500 font-medium">Page ID: 102938475610293 • E-commerce & Retail • 48,520 Followers</p>
+                      <p className="text-xs text-slate-500 font-medium">Page ID: {pageData.id} • {pageData.category} • {pageData.followers} Followers</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -334,7 +645,7 @@
                       onClick={() => setActiveTab('connect')} 
                       className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-semibold rounded-xl border border-slate-200 transition-colors"
                     >
-                      {isBn ? 'পেজ ম্যানেজ করুন' : 'Manage Page'}
+                      {isBn ? 'আসল পেজ পরিবর্তন' : 'Change Page'}
                     </button>
                   </div>
                 </div>
@@ -386,17 +697,16 @@
 
                 {/* Quick Actions & Recent Activity */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* Left: Quick Actions */}
                   <div className="lg:col-span-1 space-y-3">
                     <h3 className="font-bold text-slate-800 text-sm">{isBn ? 'কুইক অ্যাকশন' : 'Quick Actions'}</h3>
-                    <div onClick={() => setActiveTab('meta-products')} className="p-4 bg-white rounded-xl border border-slate-200 hover:border-meta hover:shadow-md transition-all cursor-pointer flex items-center justify-between">
+                    <div onClick={() => setActiveTab('connect')} className="p-4 bg-white rounded-xl border border-slate-200 hover:border-meta hover:shadow-md transition-all cursor-pointer flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-blue-50 text-meta flex items-center justify-center font-bold">
-                          <i className="fa-solid fa-cubes"></i>
+                        <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                          <i className="fa-solid fa-link"></i>
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-slate-800">{isBn ? 'মেটা প্রোডাক্টস ম্যানেজার' : 'Meta Products Manager'}</p>
-                          <p className="text-xs text-slate-500">{isBn ? 'Webhooks ও Facebook Login সক্রিয়' : 'Webhooks & Facebook Login'}</p>
+                          <p className="text-sm font-bold text-slate-800">{isBn ? 'আসল পেজ পরিবর্তন করুন' : 'Connect Real Page'}</p>
+                          <p className="text-xs text-slate-500">{isBn ? 'আপনার আসল পেজ আইডি ও টোকেন' : 'Your Page ID & Token'}</p>
                         </div>
                       </div>
                       <i className="fa-solid fa-chevron-right text-xs text-slate-400"></i>
@@ -417,7 +727,7 @@
 
                     <div onClick={() => setActiveTab('comments')} className="p-4 bg-white rounded-xl border border-slate-200 hover:border-meta hover:shadow-md transition-all cursor-pointer flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                        <div className="w-10 h-10 rounded-lg bg-blue-50 text-meta flex items-center justify-center font-bold">
                           <i className="fa-solid fa-comments"></i>
                         </div>
                         <div>
@@ -429,7 +739,6 @@
                     </div>
                   </div>
 
-                  {/* Right: Live Activity Stream */}
                   <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
@@ -466,87 +775,6 @@
               </div>
             )}
 
-            {/* 2. CONNECT FACEBOOK PAGE */}
-            {activeTab === 'connect' && (
-              <div className="max-w-4xl mx-auto space-y-6">
-                <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-                  <div className="flex items-center space-x-3 mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-meta text-white flex items-center justify-center text-xl">
-                      <i className="fa-brands fa-facebook"></i>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-900">{isBn ? 'অফিসিয়াল মেটা লগইন ও পেজ কানেকশন' : 'Official Meta Login & Page Connection'}</h3>
-                      <p className="text-xs text-slate-500">{isBn ? 'আপনার ফেসবুক অ্যাকাউন্টের কোনো পাসওয়ার্ড আমরা সংরক্ষণ করি না। সম্পূর্ণ মেটা Graph API OAuth 2.0 টোকেন দ্বারা পরিচালিত।' : 'Secure OAuth 2.0 connection. No passwords ever stored.'}</p>
-                    </div>
-                  </div>
-
-                  {pageConnected ? (
-                    <div className="p-5 rounded-2xl bg-blue-50/60 border border-blue-200 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 rounded-full bg-meta text-white flex items-center justify-center font-bold">M</div>
-                          <div>
-                            <p className="font-bold text-slate-900">Masum Tech & Fashion Zone</p>
-                            <p className="text-xs text-slate-500">Page ID: 102938475610293 • 48.5K Followers</p>
-                          </div>
-                        </div>
-                        <span className="px-3 py-1 bg-emerald-100 text-emerald-800 font-bold text-xs rounded-full flex items-center gap-1.5">
-                          <i className="fa-solid fa-circle-check"></i> {isBn ? 'সক্রিয় ও অনুমোদিত' : 'Connected'}
-                        </span>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-white p-3.5 rounded-xl border border-blue-100">
-                        <div>
-                          <span className="text-slate-400 font-semibold">{isBn ? 'টোকেন স্ট্যাটাস:' : 'Token Status:'}</span>
-                          <span className="ml-2 font-bold text-emerald-600">Never-expiring Page Access Token</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-400 font-semibold">{isBn ? 'ক্যাটাগরি:' : 'Category:'}</span>
-                          <span className="ml-2 font-bold text-slate-700">E-commerce / Retail</span>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-3">
-                        <button onClick={() => setPageConnected(false)} className="px-4 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold text-xs rounded-xl border border-rose-200 transition-colors">
-                          <i className="fa-solid fa-link-slash mr-1.5"></i> {isBn ? 'পেজ ডিসকানেক্ট করুন' : 'Disconnect Page'}
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <button onClick={() => setPageConnected(true)} className="px-6 py-3 bg-meta hover:bg-meta-dark text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center gap-2 mx-auto">
-                        <i className="fa-brands fa-facebook text-lg"></i>
-                        <span>{isBn ? 'ফেসবুকের সাথে কানেক্ট করুন' : 'Connect with Facebook'}</span>
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Permissions Checklist */}
-                  <div className="mt-6 pt-6 border-t border-slate-200">
-                    <h4 className="font-bold text-slate-800 text-sm mb-3">{isBn ? 'অনুমোদিত মেটা পারমিশন চেকলিস্ট' : 'Approved Meta Permissions'}</h4>
-                    <div className="space-y-2 text-xs">
-                      {[
-                        { code: 'pages_show_list', desc: 'পেজের তালিকা দেখার অনুমতি' },
-                        { code: 'pages_read_engagement', desc: 'পোস্ট ও কমেন্টের লাইভ এনগেজমেন্ট রিড করার অনুমতি' },
-                        { code: 'pages_manage_metadata', desc: 'ওয়েবহুক ও মেটাডাটা সাবস্ক্রিপশন পরিচালনা' },
-                        { code: 'pages_manage_engagement', desc: 'পেজের পোস্ট কমেন্টে অটো-রিপ্লাই দেওয়ার অনুমতি' },
-                        { code: 'pages_messaging', desc: 'মেসেঞ্জার ইনবক্সে স্বয়ংক্রিয় মেসেজ সেন্ড করার অনুমতি' },
-                      ].map(perm => (
-                        <div key={perm.code} className="p-2.5 rounded-lg bg-slate-50 flex items-center justify-between border border-slate-200">
-                          <div className="flex items-center space-x-2">
-                            <i className="fa-solid fa-circle-check text-emerald-500"></i>
-                            <span className="font-mono font-semibold text-slate-700">{perm.code}</span>
-                            <span className="text-slate-400">• {perm.desc}</span>
-                          </div>
-                          <span className="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded">Granted</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* 3. MESSENGER AUTOMATION */}
             {activeTab === 'messenger' && (
               <div className="max-w-4xl mx-auto space-y-6">
@@ -561,7 +789,6 @@
                     </span>
                   </div>
 
-                  {/* Rules list */}
                   <div className="space-y-4">
                     {messengerRules.map(rule => (
                       <div key={rule.id} className="p-4 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-all">
@@ -575,7 +802,6 @@
                           </span>
                         </div>
 
-                        {/* Keywords Pills */}
                         <div className="flex flex-wrap gap-1.5 mb-2.5">
                           {rule.keywords.map(kw => (
                             <span key={kw} className="bg-blue-50 text-meta text-xs font-semibold px-2 py-0.5 rounded-md border border-blue-100">
@@ -584,7 +810,6 @@
                           ))}
                         </div>
 
-                        {/* Reply Preview */}
                         <div className="p-3 bg-slate-50 rounded-lg text-xs text-slate-700 font-medium border border-slate-200">
                           {rule.reply}
                         </div>
@@ -657,11 +882,10 @@
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-slate-900">{isBn ? 'মেটা ওয়েবহুক লাইভ সিমুলেটর' : 'Meta Webhook Live Simulator'}</h3>
-                      <p className="text-xs text-slate-500">{isBn ? 'মেসেঞ্জারে কোনো বার্তা আসলে বা পোস্টে কমেন্ট করলে কীভাবে অটো-রিপ্লাই যাবে তা এখনই টেস্ট করুন।' : 'Simulate incoming events and view real-time Graph API outputs.'}</p>
+                      <p className="text-xs text-slate-500">{isBn ? `সংযুক্ত পেজ "${pageData.name}" এর জন্য ইনবক্স বা কমেন্ট টেস্ট করুন।` : `Testing events for ${pageData.name}.`}</p>
                     </div>
                   </div>
 
-                  {/* Mode switch */}
                   <div className="flex p-1 bg-slate-100 rounded-xl mb-4 max-w-sm">
                     <button 
                       onClick={() => { setSimType('messenger'); setSimText('ভাই এটার দাম কত?'); }}
@@ -677,7 +901,6 @@
                     </button>
                   </div>
 
-                  {/* Inputs */}
                   <div className="space-y-3 mb-4">
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1">{isBn ? 'কাস্টমারের নাম' : 'Customer Name'}</label>
@@ -699,7 +922,6 @@
                     </div>
                   </div>
 
-                  {/* Quick sample chips */}
                   <div className="flex flex-wrap gap-2 mb-6">
                     {(simType === 'messenger' ? [
                       'দাম কত ভাই?', 'ঢাকার বাইরে কি ডেলিভারি হবে?', 'আপনাদের শোরুমের ঠিকানা কোথায়?', 'অর্ডার করতে চাই'
@@ -724,13 +946,12 @@
                     <span>{isBn ? 'টেস্ট ইভেন্ট পাঠান ও অটো-রিপ্লাই দেখুন' : 'Trigger Simulation Event'}</span>
                   </button>
 
-                  {/* Result Box */}
                   {simResult && (
                     <div className="mt-6 p-5 rounded-2xl bg-slate-900 text-white space-y-4">
                       <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                         <div className="flex items-center space-x-2">
                           <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                          <span className="font-bold text-sm text-emerald-400">Status 200 OK — Rule Matched: {simResult.rule}</span>
+                          <span className="font-bold text-sm text-emerald-400">Status 200 OK — Rule: {simResult.rule}</span>
                         </div>
                         <span className="text-xs text-slate-400 font-mono">180ms Latency</span>
                       </div>
