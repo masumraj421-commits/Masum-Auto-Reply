@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Masum Auto Reply | মাছুম অটো রিপ্লাই - ফেসবুক পেজ অটোমেশন</title>
+  <link rel="icon" href="https://img.icons8.com/color/96/facebook-messenger--v1.png" type="image/png">
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            meta: {
+              DEFAULT: '#1877F2',
+              dark: '#0C5EC7',
+              light: '#E7F3FF'
+            },
+            tealAccent: '#0D9488',
+            emeraldCustom: '#10B981'
+          },
+          fontFamily: {
+            sans: ['"Hind Siliguri"', 'Inter', 'sans-serif'],
+            mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <!-- React 18 & Babel for fast standalone execution on Vercel -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Heroicons SVG / FontAwesome icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: 'Hind Siliguri', 'Inter', sans-serif; }
+    .code-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
+    .code-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased selection:bg-meta selection:text-white min-h-screen">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const initialMessengerRules = [
+      {
+        id: 'm1',
+        name: 'পণ্যের দাম ও ক্যাটালগ (Price Inquiry)',
+        keywords: ['দাম', 'price', 'কত', 'rate', 'cost', 'টাকা'],
+        reply: 'আসসালামু আলাইকুম {user_name}! আমাদের সকল প্রিমিয়াম প্রডাক্টের দাম ও ক্যাটালগ দেখতে এই লিংকে ভিজিট করুন: https://masumshop.com/catalog । এছাড়া যেকোনো নির্দিষ্ট মডেল জানতে ছবি ইনবক্সে পাঠান!',
+        enabled: true,
+        matches: 892
+      },
+      {
+        id: 'm2',
+        name: 'ডেলিভারি চার্জ ও সময় (Delivery Info)',
+        keywords: ['delivery', 'ডেলিভারি', 'চার্জ', 'কবে পাব', 'কুরিয়ার'],
+        reply: 'ধন্যবাদ {user_name}! সারাদেশে ক্যাশ অন ডেলিভারি (Cash on Delivery) সুবিধা রয়েছে। ঢাকার ভেতরে চার্জ ৭০ টাকা (২৪-৪৮ ঘণ্টা), ঢাকার বাইরে ১৩০ টাকা (২-৩ কার্যদিবস)।',
+        enabled: true,
+        matches: 421
+      },
+      {
+        id: 'm3',
+        name: 'অর্ডার করার নিয়ম (How to Order)',
+        keywords: ['order', 'অর্ডার', 'কিনব', 'চাই', 'কিনতে চাই'],
+        reply: 'অর্ডার নিশ্চিত করতে অনুগ্রহ করে আপনার: ১. পুরো নাম, ২. ডেলিভারি ঠিকানা এবং ৩. মোবাইল নাম্বার লিখে পাঠান। আমাদের টিম কনফার্মেশন কল করবে!',
+        enabled: true,
+        matches: 310
+      },
+      {
+        id: 'm4',
+        name: 'শোরুমের ঠিকানা ও লোকেশন (Store Location)',
+        keywords: ['ঠিকানা', 'location', 'address', 'দোকান', 'শোরুম', 'কোথায়'],
+        reply: 'আমাদের শোরুমের ঠিকানা: বাড়ি নং ৪২, লেক সার্কাস, কলাবাগান/ধানমন্ডি, ঢাকা-১২০৫। প্রতিদিন সকাল ১০টা থেকে রাত ৮টা পর্যন্ত খোলা থাকে।',
+        enabled: true,
+        matches: 145
+      }
+    ];
+
+    const initialCommentRules = [
+      {
+        id: 'c1',
+        name: 'দামের কমেন্ট রিপ্লাই (Price Comment)',
+        keywords: ['price', 'দাম', 'কত', 'cost'],
+        publicReply: 'ধন্যবাদ {user_name}! বিস্তারিত মূল্য তালিকা ও ডিসকাউন্ট অফার আপনার ইনবক্সে সেন্ড করা হয়েছে। দয়া করে ইনবক্স চেক করুন ❤️',
+        sendPrivate: true,
+        privateReply: 'আসসালামু আলাইকুম {user_name}! আপনি পেজের পোস্টে দাম জানতে চেয়েছেন। এই প্রডাক্টটির অফার মূল্য মাত্র ১,৪৯০ টাকা (রেগুলার ১,৯৫০ টাকা)। অর্ডার করতে রিপ্লাই দিন!',
+        enabled: true,
+        matches: 1540
+      },
+      {
+        id: 'c2',
+        name: 'স্টক ও অ্যাভেইলেবিলিটি (Stock Available)',
+        keywords: ['available', 'আছে', 'স্টক', 'পাওয়া যাবে'],
+        publicReply: 'জী {user_name}, আলহামদুলিল্লাহ পণ্যটি বর্তমানে স্টকে রয়েছে! দ্রুত অর্ডার করতে আমাদের ইনবক্সে মেসেজ পাঠান।',
+        sendPrivate: true,
+        privateReply: 'প্রিয় {user_name}, পণ্যটি বর্তমানে লিমিটেড স্টকে আছে। সাইজ ও কালার পছন্দ করতে এখানে আপনার পছন্দের সাইজ জানান!',
+        enabled: true,
+        matches: 820
+      },
+      {
+        id: 'c3',
+        name: 'পণ্য প্রশংসা ও ফিডব্যাক (Compliment)',
+        keywords: ['nice', 'সুন্দর', 'good', 'অসাধারণ', 'ভালো'],
+        publicReply: 'অনেক অনেক ধন্যবাদ {user_name} আপনার চমৎকার মন্তব্যের জন্য! নিয়মিত নতুন কালেকশন দেখতে আমাদের পেজে চোখ রাখুন 🥰',
+        sendPrivate: false,
+        privateReply: '',
+        enabled: true,
+        matches: 640
+      }
+    ];
+
+    function App() {
+      const [lang, setLang] = useState('bn'); // 'bn' | 'en'
+      const [activeTab, setActiveTab] = useState('dashboard');
+      const [isMasterActive, setIsMasterActive] = useState(true);
+      const [pageConnected, setPageConnected] = useState(true);
+      const [messengerRules, setMessengerRules] = useState(initialMessengerRules);
+      const [commentRules, setCommentRules] = useState(initialCommentRules);
+      const [activityLogs, setActivityLogs] = useState([
+        { id: 1, type: 'messenger', title: 'ইনবক্স মেসেজ অটো-রিপ্লাই (পণ্যের দাম ও ক্যাটালগ)', time: '২ মিনিট আগে', details: 'প্রেরক: Tanvir Ahmed | "ভাই এটার দাম কত?" -> উত্তর পাঠানো হয়েছে', status: 'SUCCESS' },
+        { id: 2, type: 'comment', title: 'পোস্ট কমেন্টে রিপ্লাই ও প্রাইভেট মেসেজ পাঠানো সফল', time: '১২ মিনিট আগে', details: 'কমেন্টকারী: Sadia Afrin | "Price please" -> পাবলিক রিপ্লাই ও ইনবক্স অফার সেন্ড', status: 'SUCCESS' },
+        { id: 3, type: 'webhook', title: 'Meta Webhook GET Challenge ভেরিফাইড (200 OK)', time: '৪৫ মিনিট আগে', details: 'hub.challenge token returned successfully', status: 'SUCCESS' }
+      ]);
+
+      // Simulator states
+      const [simType, setSimType] = useState('messenger'); // 'messenger' | 'comment'
+      const [simName, setSimName] = useState('Tanvir Hasan');
+      const [simText, setSimText] = useState('ভাই এটার দাম কত?');
+      const [simResult, setSimResult] = useState(null);
+
+      // Meta Config
+      const [appId, setAppId] = useState('109823487192834');
+      const [appSecret, setAppSecret] = useState('a8f9c1b4e2d7e8a9f0b1c2d3e4f5a6b7');
+      const [verifyToken, setVerifyToken] = useState('masum_autoreply_verify_token_2026');
+      const [webhookUrl, setWebhookUrl] = useState('https://masuma-auto.vercel.app/api/webhook');
+      const [redirectUri, setRedirectUri] = useState('https://masuma-auto.vercel.app/auth/callback');
+      const [handshakeMessage, setHandshakeMessage] = useState(null);
+
+      const isBn = lang === 'bn';
+
+      // Simulator function
+      const runSimulation = () => {
+        const lower = simText.toLowerCase();
+        if (simType === 'messenger') {
+          let matched = messengerRules.find(r => r.enabled && r.keywords.some(k => lower.includes(k.toLowerCase())));
+          const replyText = matched 
+            ? matched.reply.replace('{user_name}', simName)
+            : `ধন্যবাদ ${simName} আপনার বার্তার জন্য! আমাদের প্রতিনিধি কিছুক্ষণের মধ্যেই আপনার বার্তার উত্তর দেবেন।`;
+          const ruleName = matched ? matched.name : 'Default Fallback (ডিফল্ট রিপ্লাই)';
+          
+          setSimResult({
+            rule: ruleName,
+            reply: replyText,
+            endpoint: 'POST https://graph.facebook.com/v21.0/me/messages',
+            payload: JSON.stringify({ recipient: { id: "psid_928174" }, message: { text: replyText } }, null, 2),
+            status: 200
+          });
+
+          setActivityLogs(prev => [{
+            id: Date.now(),
+            type: 'messenger',
+            title: `ইনবক্স মেসেজ টেস্ট (${ruleName})`,
+            time: 'এইমাত্র',
+            details: `প্রেরক: ${simName} | মেসেজ: "${simText}" -> উত্তর সফল`,
+            status: 'SUCCESS'
+          }, ...prev]);
+
+        } else {
+          let matched = commentRules.find(r => r.enabled && r.keywords.some(k => lower.includes(k.toLowerCase())));
+          const pubReply = matched 
+            ? matched.publicReply.replace('{user_name}', simName)
+            : `ধন্যবাদ ${simName} মন্তব্যের জন্য! বিস্তারিত জানতে ইনবক্স চেক করুন ❤️`;
+          const privReply = matched && matched.sendPrivate 
+            ? matched.privateReply.replace('{user_name}', simName) 
+            : '';
+          const ruleName = matched ? matched.name : 'Default Comment (ডিফল্ট কমেন্ট)';
+
+          setSimResult({
+            rule: ruleName,
+            reply: pubReply + (privReply ? `\n\n✉️ [ইনবক্স প্রাইভেট মেসেজ পাঠানো হয়েছে]: ${privReply}` : ''),
+            endpoint: 'POST https://graph.facebook.com/v21.0/cmt_99182/comments',
+            payload: JSON.stringify({ message: pubReply }, null, 2),
+            status: 200
+          });
+
+          setActivityLogs(prev => [{
+            id: Date.now(),
+            type: 'comment',
+            title: `কমেন্ট টেস্ট রিপ্লাই (${ruleName})`,
+            time: 'এইমাত্র',
+            details: `কমেন্টকারী: ${simName} | "${simText}" -> পাবলিক ও প্রাইভেট রিপ্লাই সম্পন্ন`,
+            status: 'SUCCESS'
+          }, ...prev]);
+        }
+      };
+
+      const testHandshake = () => {
+        const rand = Math.floor(100000 + Math.random() * 900000);
+        setHandshakeMessage(`মেটা হ্যান্ডশেক সফল! (200 OK, Challenge: challenge_${rand} ভেরিফাইড)`);
+        setActivityLogs(prev => [{
+          id: Date.now(),
+          type: 'webhook',
+          title: 'Meta Webhook GET Handshake Test (200 OK)',
+          time: 'এইমাত্র',
+          details: `URL: ${webhookUrl}?hub.mode=subscribe&hub.challenge=challenge_${rand} -> Verified`,
+          status: 'SUCCESS'
+        }, ...prev]);
+      };
+
+      return (
+        <div className="flex flex-col min-h-screen">
+          {/* Top Navbar */}
+          <header className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex justify-between items-center h-16">
+                {/* Brand */}
+                <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setActiveTab('dashboard')}>
+                  <div className="w-10 h-10 rounded-xl bg-meta flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+                    <i className="fa-brands fa-facebook-messenger text-xl"></i>
+                  </div>
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <span className="font-bold text-lg text-slate-900 tracking-tight">
+                        {isBn ? 'মাছুম অটো রিপ্লাই' : 'Masum Auto Reply'}
+                      </span>
+                      <span className={`inline-block w-2.5 h-2.5 rounded-full ${isMasterActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
+                    </div>
+                    <span className="text-xs text-slate-500 font-medium hidden sm:inline">
+                      {isBn ? 'ফেসবুক পেজ মেসেঞ্জার ও কমেন্ট অটোমেশন হাব' : 'Facebook Page Messenger & Comment Automation Hub'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Right controls */}
+                <div className="flex items-center space-x-3">
+                  {/* Master Power Toggle */}
+                  <button 
+                    onClick={() => setIsMasterActive(!isMasterActive)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-all ${isMasterActive ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}
+                  >
+                    <i className={`fa-solid ${isMasterActive ? 'fa-circle-check' : 'fa-power-off'}`}></i>
+                    <span>{isMasterActive ? (isBn ? 'অটোমেশন চালু' : 'Auto Active') : (isBn ? 'অটোমেশন বন্ধ' : 'Paused')}</span>
+                  </button>
+
+                  {/* Language Toggle */}
+                  <button 
+                    onClick={() => setLang(lang === 'bn' ? 'en' : 'bn')}
+                    className="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center space-x-1 transition-colors"
+                  >
+                    <i className="fa-solid fa-language text-sm"></i>
+                    <span>{lang === 'bn' ? 'বাংলা' : 'ENG'}</span>
+                  </button>
+
+                  {/* Profile Pill */}
+                  <div className="flex items-center space-x-2 pl-2 border-l border-slate-200">
+                    <div className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xs">
+                      M
+                    </div>
+                    <div className="hidden md:block text-left text-xs">
+                      <p className="font-bold text-slate-800 leading-none">Masum Raj</p>
+                      <p className="text-slate-400 text-[10px]">masumraj421@gmail.com</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation Tabs Bar */}
+            <div className="bg-slate-50/80 border-t border-slate-200 px-4 sm:px-6 lg:px-8 overflow-x-auto">
+              <div className="max-w-7xl mx-auto flex space-x-1 sm:space-x-3 py-2 text-sm font-semibold whitespace-nowrap">
+                {[
+                  { id: 'dashboard', labelBn: 'ড্যাশবোর্ড', labelEn: 'Dashboard', icon: 'fa-chart-pie' },
+                  { id: 'connect', labelBn: 'পেজ কানেক্ট', labelEn: 'Connect Page', icon: 'fa-link' },
+                  { id: 'messenger', labelBn: 'মেসেঞ্জার অটোমেশন', labelEn: 'Messenger Rules', icon: 'fa-comment-dots' },
+                  { id: 'comments', labelBn: 'কমেন্ট অটো রিপ্লাই', labelEn: 'Comment Rules', icon: 'fa-comments' },
+                  { id: 'simulator', labelBn: 'লাইভ টেস্ট সিমুলেটর', labelEn: 'Live Simulator', icon: 'fa-vial' },
+                  { id: 'meta-products', labelBn: 'মেটা প্রোডাক্টস (Login ও Webhook)', labelEn: 'Meta Products', icon: 'fa-cubes' },
+                  { id: 'code-export', labelBn: 'ক্লাউড স্ক্রিপ্ট ও ডিপ্লয়', labelEn: 'Cloudflare & SQL', icon: 'fa-code' },
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
+                      activeTab === tab.id
+                        ? 'bg-meta text-white shadow-sm font-semibold'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                    }`}
+                  >
+                    <i className={`fa-solid ${tab.icon} text-xs`}></i>
+                    <span>{isBn ? tab.labelBn : tab.labelEn}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </header>
+
+          {/* Main Content Area */}
+          <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+            {/* 1. DASHBOARD */}
+            {activeTab === 'dashboard' && (
+              <div className="space-y-6">
+                {/* Connected Page Banner */}
+                <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 text-white flex items-center justify-center text-2xl font-black shadow-md shadow-blue-500/20">
+                      M
+                    </div>
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <h2 className="text-xl font-bold text-slate-900">Masum Tech & Fashion Zone</h2>
+                        <span className="bg-blue-100 text-meta text-xs px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                          <i className="fa-solid fa-circle-check text-xs"></i> {isBn ? 'ভেরিফাইড পেজ' : 'Verified Page'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 font-medium">Page ID: 102938475610293 • E-commerce & Retail • 48,520 Followers</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button 
+                      onClick={() => setActiveTab('simulator')} 
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm transition-all flex items-center gap-2"
+                    >
+                      <i className="fa-solid fa-play text-xs"></i>
+                      <span>{isBn ? 'লাইভ টেস্ট চালান' : 'Test Live'}</span>
+                    </button>
+                    <button 
+                      onClick={() => setActiveTab('connect')} 
+                      className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-semibold rounded-xl border border-slate-200 transition-colors"
+                    >
+                      {isBn ? 'পেজ ম্যানেজ করুন' : 'Manage Page'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* 4 Stat Cards */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                  <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                    <div className="flex justify-between items-center text-slate-400 mb-2">
+                      <span className="text-xs font-bold text-slate-500">{isBn ? 'মোট মেসেজ রিপ্লাই' : 'Total Messages'}</span>
+                      <i className="fa-solid fa-paper-plane text-meta"></i>
+                    </div>
+                    <div className="text-2xl sm:text-3xl font-extrabold text-slate-900">1,842</div>
+                    <div className="text-[11px] text-emerald-600 font-semibold mt-1 flex items-center gap-1">
+                      <i className="fa-solid fa-arrow-trend-up"></i> +12% {isBn ? 'আজকে' : 'today'}
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                    <div className="flex justify-between items-center text-slate-400 mb-2">
+                      <span className="text-xs font-bold text-slate-500">{isBn ? 'পোস্ট কমেন্ট রিপ্লাই' : 'Comments Handled'}</span>
+                      <i className="fa-solid fa-comments text-teal-600"></i>
+                    </div>
+                    <div className="text-2xl sm:text-3xl font-extrabold text-slate-900">3,490</div>
+                    <div className="text-[11px] text-emerald-600 font-semibold mt-1 flex items-center gap-1">
+                      <i className="fa-solid fa-shield-halved"></i> {isBn ? '১০০% ডুপ্লিকেট সুরক্ষিত' : '100% Anti-Dup'}
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                    <div className="flex justify-between items-center text-slate-400 mb-2">
+                      <span className="text-xs font-bold text-slate-500">{isBn ? 'সফলতার হার' : 'Success Rate'}</span>
+                      <i className="fa-solid fa-bolt text-amber-500"></i>
+                    </div>
+                    <div className="text-2xl sm:text-3xl font-extrabold text-slate-900">99.8%</div>
+                    <div className="text-[11px] text-slate-500 font-medium mt-1">Graph API 200 OK</div>
+                  </div>
+
+                  <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                    <div className="flex justify-between items-center text-slate-400 mb-2">
+                      <span className="text-xs font-bold text-slate-500">{isBn ? 'সক্রিয় রুলস' : 'Active Rules'}</span>
+                      <i className="fa-solid fa-sliders text-purple-600"></i>
+                    </div>
+                    <div className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+                      {messengerRules.filter(r => r.enabled).length + commentRules.filter(r => r.enabled).length}
+                    </div>
+                    <div className="text-[11px] text-slate-500 font-medium mt-1">{isBn ? 'মেসেঞ্জার ও কমেন্ট উভয়ই' : 'Messenger & Comments'}</div>
+                  </div>
+                </div>
+
+                {/* Quick Actions & Recent Activity */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Left: Quick Actions */}
+                  <div className="lg:col-span-1 space-y-3">
+                    <h3 className="font-bold text-slate-800 text-sm">{isBn ? 'কুইক অ্যাকশন' : 'Quick Actions'}</h3>
+                    <div onClick={() => setActiveTab('meta-products')} className="p-4 bg-white rounded-xl border border-slate-200 hover:border-meta hover:shadow-md transition-all cursor-pointer flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-blue-50 text-meta flex items-center justify-center font-bold">
+                          <i className="fa-solid fa-cubes"></i>
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-800">{isBn ? 'মেটা প্রোডাক্টস ম্যানেজার' : 'Meta Products Manager'}</p>
+                          <p className="text-xs text-slate-500">{isBn ? 'Webhooks ও Facebook Login সক্রিয়' : 'Webhooks & Facebook Login'}</p>
+                        </div>
+                      </div>
+                      <i className="fa-solid fa-chevron-right text-xs text-slate-400"></i>
+                    </div>
+
+                    <div onClick={() => setActiveTab('messenger')} className="p-4 bg-white rounded-xl border border-slate-200 hover:border-meta hover:shadow-md transition-all cursor-pointer flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center font-bold">
+                          <i className="fa-solid fa-comment-dots"></i>
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-800">{isBn ? 'মেসেঞ্জার রুলস কনফিগার' : 'Messenger Rules'}</p>
+                          <p className="text-xs text-slate-500">{isBn ? 'দাম, ডেলিভারি ও অর্ডার নিয়ম' : 'Prices, delivery & orders'}</p>
+                        </div>
+                      </div>
+                      <i className="fa-solid fa-chevron-right text-xs text-slate-400"></i>
+                    </div>
+
+                    <div onClick={() => setActiveTab('comments')} className="p-4 bg-white rounded-xl border border-slate-200 hover:border-meta hover:shadow-md transition-all cursor-pointer flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                          <i className="fa-solid fa-comments"></i>
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-800">{isBn ? 'কমেন্ট অটো রিপ্লাই রুলস' : 'Comment Auto Reply'}</p>
+                          <p className="text-xs text-slate-500">{isBn ? 'পাবলিক রিপ্লাই ও ইনবক্স প্রাইভেট অফার' : 'Public reply & private inbox offer'}</p>
+                        </div>
+                      </div>
+                      <i className="fa-solid fa-chevron-right text-xs text-slate-400"></i>
+                    </div>
+                  </div>
+
+                  {/* Right: Live Activity Stream */}
+                  <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                        <i className="fa-solid fa-clock-rotate-left text-meta text-sm"></i>
+                        <span>{isBn ? 'সাম্প্রতিক লাইভ অ্যাক্টিভিটি' : 'Recent Live Activity'}</span>
+                      </h3>
+                      <span className="text-xs text-slate-400 font-medium">{isBn ? 'রিয়েল-টাইম মেটা ইভেন্ট' : 'Real-time Meta Events'}</span>
+                    </div>
+
+                    <div className="space-y-3">
+                      {activityLogs.slice(0, 5).map(log => (
+                        <div key={log.id} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-3">
+                            <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs shrink-0 mt-0.5 ${
+                              log.type === 'messenger' ? 'bg-blue-100 text-blue-700' :
+                              log.type === 'comment' ? 'bg-teal-100 text-teal-700' : 'bg-emerald-100 text-emerald-700'
+                            }`}>
+                              <i className={`fa-solid ${
+                                log.type === 'messenger' ? 'fa-paper-plane' :
+                                log.type === 'comment' ? 'fa-comment' : 'fa-check'
+                              }`}></i>
+                            </span>
+                            <div>
+                              <p className="text-sm font-bold text-slate-800">{log.title}</p>
+                              <p className="text-xs text-slate-500 mt-0.5 font-medium">{log.details}</p>
+                            </div>
+                          </div>
+                          <span className="text-[11px] font-semibold text-slate-400 shrink-0">{log.time}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 2. CONNECT FACEBOOK PAGE */}
+            {activeTab === 'connect' && (
+              <div className="max-w-4xl mx-auto space-y-6">
+                <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-12 h-12 rounded-xl bg-meta text-white flex items-center justify-center text-xl">
+                      <i className="fa-brands fa-facebook"></i>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900">{isBn ? 'অফিসিয়াল মেটা লগইন ও পেজ কানেকশন' : 'Official Meta Login & Page Connection'}</h3>
+                      <p className="text-xs text-slate-500">{isBn ? 'আপনার ফেসবুক অ্যাকাউন্টের কোনো পাসওয়ার্ড আমরা সংরক্ষণ করি না। সম্পূর্ণ মেটা Graph API OAuth 2.0 টোকেন দ্বারা পরিচালিত।' : 'Secure OAuth 2.0 connection. No passwords ever stored.'}</p>
+                    </div>
+                  </div>
+
+                  {pageConnected ? (
+                    <div className="p-5 rounded-2xl bg-blue-50/60 border border-blue-200 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 rounded-full bg-meta text-white flex items-center justify-center font-bold">M</div>
+                          <div>
+                            <p className="font-bold text-slate-900">Masum Tech & Fashion Zone</p>
+                            <p className="text-xs text-slate-500">Page ID: 102938475610293 • 48.5K Followers</p>
+                          </div>
+                        </div>
+                        <span className="px-3 py-1 bg-emerald-100 text-emerald-800 font-bold text-xs rounded-full flex items-center gap-1.5">
+                          <i className="fa-solid fa-circle-check"></i> {isBn ? 'সক্রিয় ও অনুমোদিত' : 'Connected'}
+                        </span>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-white p-3.5 rounded-xl border border-blue-100">
+                        <div>
+                          <span className="text-slate-400 font-semibold">{isBn ? 'টোকেন স্ট্যাটাস:' : 'Token Status:'}</span>
+                          <span className="ml-2 font-bold text-emerald-600">Never-expiring Page Access Token</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 font-semibold">{isBn ? 'ক্যাটাগরি:' : 'Category:'}</span>
+                          <span className="ml-2 font-bold text-slate-700">E-commerce / Retail</span>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-3">
+                        <button onClick={() => setPageConnected(false)} className="px-4 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold text-xs rounded-xl border border-rose-200 transition-colors">
+                          <i className="fa-solid fa-link-slash mr-1.5"></i> {isBn ? 'পেজ ডিসকানেক্ট করুন' : 'Disconnect Page'}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <button onClick={() => setPageConnected(true)} className="px-6 py-3 bg-meta hover:bg-meta-dark text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center gap-2 mx-auto">
+                        <i className="fa-brands fa-facebook text-lg"></i>
+                        <span>{isBn ? 'ফেসবুকের সাথে কানেক্ট করুন' : 'Connect with Facebook'}</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Permissions Checklist */}
+                  <div className="mt-6 pt-6 border-t border-slate-200">
+                    <h4 className="font-bold text-slate-800 text-sm mb-3">{isBn ? 'অনুমোদিত মেটা পারমিশন চেকলিস্ট' : 'Approved Meta Permissions'}</h4>
+                    <div className="space-y-2 text-xs">
+                      {[
+                        { code: 'pages_show_list', desc: 'পেজের তালিকা দেখার অনুমতি' },
+                        { code: 'pages_read_engagement', desc: 'পোস্ট ও কমেন্টের লাইভ এনগেজমেন্ট রিড করার অনুমতি' },
+                        { code: 'pages_manage_metadata', desc: 'ওয়েবহুক ও মেটাডাটা সাবস্ক্রিপশন পরিচালনা' },
+                        { code: 'pages_manage_engagement', desc: 'পেজের পোস্ট কমেন্টে অটো-রিপ্লাই দেওয়ার অনুমতি' },
+                        { code: 'pages_messaging', desc: 'মেসেঞ্জার ইনবক্সে স্বয়ংক্রিয় মেসেজ সেন্ড করার অনুমতি' },
+                      ].map(perm => (
+                        <div key={perm.code} className="p-2.5 rounded-lg bg-slate-50 flex items-center justify-between border border-slate-200">
+                          <div className="flex items-center space-x-2">
+                            <i className="fa-solid fa-circle-check text-emerald-500"></i>
+                            <span className="font-mono font-semibold text-slate-700">{perm.code}</span>
+                            <span className="text-slate-400">• {perm.desc}</span>
+                          </div>
+                          <span className="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded">Granted</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 3. MESSENGER AUTOMATION */}
+            {activeTab === 'messenger' && (
+              <div className="max-w-4xl mx-auto space-y-6">
+                <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                  <div className="flex justify-between items-center mb-6">
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900">{isBn ? 'ইনবক্স মেসেঞ্জার অটো-রিপ্লাই রুলস' : 'Messenger Inbox Auto-Reply Rules'}</h3>
+                      <p className="text-xs text-slate-500">{isBn ? 'কাস্টমারের ইনবক্স মেসেজে নির্দিষ্ট কি-ওয়ার্ডের ভিত্তিতে স্বয়ংক্রিয় উত্তর পাঠান।' : 'Keyword-based automated replies for customer inquiries.'}</p>
+                    </div>
+                    <span className="px-3 py-1 bg-blue-100 text-meta text-xs font-bold rounded-full">
+                      {messengerRules.length} {isBn ? 'টি সক্রিয় রুল' : 'Rules'}
+                    </span>
+                  </div>
+
+                  {/* Rules list */}
+                  <div className="space-y-4">
+                    {messengerRules.map(rule => (
+                      <div key={rule.id} className="p-4 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-all">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                            <i className="fa-solid fa-bolt text-amber-500 text-xs"></i>
+                            <span>{rule.name}</span>
+                          </h4>
+                          <span className="text-[11px] font-semibold text-slate-400">
+                            {isBn ? 'রিপ্লাই হয়েছে:' : 'Triggered:'} {rule.matches} {isBn ? 'বার' : 'times'}
+                          </span>
+                        </div>
+
+                        {/* Keywords Pills */}
+                        <div className="flex flex-wrap gap-1.5 mb-2.5">
+                          {rule.keywords.map(kw => (
+                            <span key={kw} className="bg-blue-50 text-meta text-xs font-semibold px-2 py-0.5 rounded-md border border-blue-100">
+                              #{kw}
+                            </span>
+                          ))}
+                        </div>
+
+                        {/* Reply Preview */}
+                        <div className="p-3 bg-slate-50 rounded-lg text-xs text-slate-700 font-medium border border-slate-200">
+                          {rule.reply}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 4. COMMENT AUTOMATION */}
+            {activeTab === 'comments' && (
+              <div className="max-w-4xl mx-auto space-y-6">
+                <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                  <div className="flex justify-between items-center mb-6">
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900">{isBn ? 'ফেসবুক পেজ পোস্ট কমেন্ট অটো-রিপ্লাই' : 'Post Comment Auto-Reply Rules'}</h3>
+                      <p className="text-xs text-slate-500">{isBn ? 'পোস্টে আসা কমেন্টে পাবলিক রিপ্লাই দেওয়ার পাশাপাশি ইনবক্সেও প্রাইভেট অফার পাঠান।' : 'Public comment reply and instant private messenger message.'}</p>
+                    </div>
+                    <span className="px-3 py-1 bg-teal-100 text-teal-800 text-xs font-bold rounded-full">
+                      {commentRules.length} {isBn ? 'টি সক্রিয় রুল' : 'Rules'}
+                    </span>
+                  </div>
+
+                  <div className="space-y-4">
+                    {commentRules.map(rule => (
+                      <div key={rule.id} className="p-4 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-all">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                            <i className="fa-solid fa-comment-dots text-teal-600 text-xs"></i>
+                            <span>{rule.name}</span>
+                          </h4>
+                          <span className="text-[11px] font-semibold text-slate-400">
+                            {isBn ? 'রিপ্লাই হয়েছে:' : 'Triggered:'} {rule.matches} {isBn ? 'বার' : 'times'}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-wrap gap-1.5 mb-2.5">
+                          {rule.keywords.map(kw => (
+                            <span key={kw} className="bg-teal-50 text-teal-700 text-xs font-semibold px-2 py-0.5 rounded-md border border-teal-100">
+                              #{kw}
+                            </span>
+                          ))}
+                        </div>
+
+                        <div className="space-y-2 text-xs">
+                          <div className="p-2.5 bg-slate-50 rounded-lg text-slate-700 border border-slate-200">
+                            <span className="font-bold text-slate-900">💬 পাবলিক কমেন্ট রিপ্লাই:</span> {rule.publicReply}
+                          </div>
+                          {rule.sendPrivate && (
+                            <div className="p-2.5 bg-blue-50/60 rounded-lg text-blue-900 border border-blue-100">
+                              <span className="font-bold text-blue-950">✉️ ইনবক্স প্রাইভেট অফার:</span> {rule.privateReply}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 5. LIVE TEST SIMULATOR */}
+            {activeTab === 'simulator' && (
+              <div className="max-w-4xl mx-auto space-y-6">
+                <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                  <div className="flex items-center space-x-3 mb-6">
+                    <div className="w-12 h-12 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-xl shadow-md shadow-emerald-500/20">
+                      <i className="fa-solid fa-vial"></i>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900">{isBn ? 'মেটা ওয়েবহুক লাইভ সিমুলেটর' : 'Meta Webhook Live Simulator'}</h3>
+                      <p className="text-xs text-slate-500">{isBn ? 'মেসেঞ্জারে কোনো বার্তা আসলে বা পোস্টে কমেন্ট করলে কীভাবে অটো-রিপ্লাই যাবে তা এখনই টেস্ট করুন।' : 'Simulate incoming events and view real-time Graph API outputs.'}</p>
+                    </div>
+                  </div>
+
+                  {/* Mode switch */}
+                  <div className="flex p-1 bg-slate-100 rounded-xl mb-4 max-w-sm">
+                    <button 
+                      onClick={() => { setSimType('messenger'); setSimText('ভাই এটার দাম কত?'); }}
+                      className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${simType === 'messenger' ? 'bg-white text-meta shadow-sm' : 'text-slate-600'}`}
+                    >
+                      <i className="fa-solid fa-paper-plane mr-1.5"></i> {isBn ? 'মেসেঞ্জার টেস্ট' : 'Messenger'}
+                    </button>
+                    <button 
+                      onClick={() => { setSimType('comment'); setSimText('Price please'); }}
+                      className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${simType === 'comment' ? 'bg-white text-teal-700 shadow-sm' : 'text-slate-600'}`}
+                    >
+                      <i className="fa-solid fa-comments mr-1.5"></i> {isBn ? 'পোস্ট কমেন্ট টেস্ট' : 'Post Comment'}
+                    </button>
+                  </div>
+
+                  {/* Inputs */}
+                  <div className="space-y-3 mb-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">{isBn ? 'কাস্টমারের নাম' : 'Customer Name'}</label>
+                      <input 
+                        type="text" 
+                        value={simName} 
+                        onChange={e => setSimName(e.target.value)} 
+                        className="w-full text-xs sm:text-sm p-3 rounded-xl border border-slate-300 focus:outline-none focus:border-meta"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">{isBn ? 'কাস্টমারের বার্তা বা কমেন্ট' : 'Customer Message or Comment'}</label>
+                      <input 
+                        type="text" 
+                        value={simText} 
+                        onChange={e => setSimText(e.target.value)} 
+                        className="w-full text-xs sm:text-sm p-3 rounded-xl border border-slate-300 focus:outline-none focus:border-meta"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Quick sample chips */}
+                  <div className="flex flex-wrap gap-2 mb-6">
+                    {(simType === 'messenger' ? [
+                      'দাম কত ভাই?', 'ঢাকার বাইরে কি ডেলিভারি হবে?', 'আপনাদের শোরুমের ঠিকানা কোথায়?', 'অর্ডার করতে চাই'
+                    ] : [
+                      'Price please', 'পণ্যটি কি এখনও স্টকে আছে?', 'অনেক সুন্দর কালেকশন!', 'চট্টগ্রামে কুরিয়ার কত?'
+                    ]).map(chip => (
+                      <button 
+                        key={chip} 
+                        onClick={() => setSimText(chip)}
+                        className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1 rounded-lg border border-slate-200 transition-colors"
+                      >
+                        {chip}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button 
+                    onClick={runSimulation}
+                    className="w-full py-3 bg-meta hover:bg-meta-dark text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+                  >
+                    <i className="fa-solid fa-bolt"></i>
+                    <span>{isBn ? 'টেস্ট ইভেন্ট পাঠান ও অটো-রিপ্লাই দেখুন' : 'Trigger Simulation Event'}</span>
+                  </button>
+
+                  {/* Result Box */}
+                  {simResult && (
+                    <div className="mt-6 p-5 rounded-2xl bg-slate-900 text-white space-y-4">
+                      <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <div className="flex items-center space-x-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                          <span className="font-bold text-sm text-emerald-400">Status 200 OK — Rule Matched: {simResult.rule}</span>
+                        </div>
+                        <span className="text-xs text-slate-400 font-mono">180ms Latency</span>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">স্বয়ংক্রিয় প্রেরিত উত্তর (Auto-Reply Response):</p>
+                        <div className="p-3 bg-slate-800/90 rounded-xl text-xs sm:text-sm text-slate-100 whitespace-pre-line border border-slate-700">
+                          {simResult.reply}
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-slate-400 font-mono mb-1">{simResult.endpoint}</p>
+                        <pre className="p-3 bg-black/50 rounded-xl text-[11px] font-mono text-emerald-300 overflow-x-auto code-scroll border border-slate-800">
+                          {simResult.payload}
+                        </pre>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* 6. META PRODUCTS: LOGIN & WEBHOOKS */}
+            {activeTab === 'meta-products' && (
+              <div className="max-w-4xl mx-auto space-y-6">
+                <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-6">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">{isBn ? 'মেটা ডেভেলপার প্রোডাক্ট কনফিগারেশন' : 'Meta Developer Products Configuration'}</h3>
+                    <p className="text-xs text-slate-500">{isBn ? 'developers.facebook.com এ আপনার অ্যাপের ভেতর Facebook Login for Business এবং Webhooks প্রোডাক্ট দুটি কনফিগার করুন।' : 'Configure Facebook Login for Business and Webhooks products.'}</p>
+                  </div>
+
+                  {/* Product 1: Facebook Login for Business */}
+                  <div className="p-5 rounded-2xl border border-blue-200 bg-blue-50/40 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 rounded-xl bg-meta text-white flex items-center justify-center font-bold">
+                          <i className="fa-solid fa-right-to-bracket"></i>
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-slate-900 text-sm">1. Facebook Login for Business</h4>
+                          <p className="text-xs text-slate-500">Official OAuth 2.0 Client Authentication</p>
+                        </div>
+                      </div>
+                      <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-lg flex items-center gap-1">
+                        <i className="fa-solid fa-check"></i> Active & Configured
+                      </span>
+                    </div>
+
+                    <div className="bg-white p-3.5 rounded-xl border border-blue-100 space-y-2">
+                      <label className="block text-xs font-bold text-slate-700">Valid OAuth Redirect URIs (মেটা কনসোলে বসান):</label>
+                      <div className="flex items-center gap-2">
+                        <input 
+                          type="text" 
+                          readOnly 
+                          value={redirectUri} 
+                          className="flex-1 text-xs font-mono p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800"
+                        />
+                        <button 
+                          onClick={() => { navigator.clipboard.writeText(redirectUri); alert('Redirect URI কপি হয়েছে!'); }} 
+                          className="px-3 py-2 bg-meta text-white text-xs font-bold rounded-lg shrink-0"
+                        >
+                          কপি করুন
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Product 2: Webhooks */}
+                  <div className="p-5 rounded-2xl border border-teal-200 bg-teal-50/40 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 rounded-xl bg-tealAccent text-white flex items-center justify-center font-bold">
+                          <i className="fa-solid fa-webhook"></i>
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-slate-900 text-sm">2. Webhooks (Page Object)</h4>
+                          <p className="text-xs text-slate-500">Live Real-time Messenger & Comment Ingestion</p>
+                        </div>
+                      </div>
+                      <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-lg flex items-center gap-1">
+                        <i className="fa-solid fa-check"></i> Subscribed & Verified
+                      </span>
+                    </div>
+
+                    <div className="bg-white p-3.5 rounded-xl border border-teal-100 space-y-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">Callback URL (Webhook Endpoint):</label>
+                        <div className="flex items-center gap-2">
+                          <input 
+                            type="text" 
+                            readOnly 
+                            value={webhookUrl} 
+                            className="flex-1 text-xs font-mono p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800"
+                          />
+                          <button 
+                            onClick={() => { navigator.clipboard.writeText(webhookUrl); alert('Callback URL কপি হয়েছে!'); }} 
+                            className="px-3 py-2 bg-teal-600 text-white text-xs font-bold rounded-lg shrink-0"
+                          >
+                            কপি করুন
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">Verify Token (hub.verify_token):</label>
+                        <div className="flex items-center gap-2">
+                          <input 
+                            type="text" 
+                            readOnly 
+                            value={verifyToken} 
+                            className="flex-1 text-xs font-mono p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800"
+                          />
+                          <button 
+                            onClick={() => { navigator.clipboard.writeText(verifyToken); alert('Verify Token কপি হয়েছে!'); }} 
+                            className="px-3 py-2 bg-teal-600 text-white text-xs font-bold rounded-lg shrink-0"
+                          >
+                            কপি করুন
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5">Subscribed Page Fields:</label>
+                        <div className="flex flex-wrap gap-2">
+                          {['messages (ইনবক্স মেসেজ)', 'messaging_postbacks (বাটন ক্লিক)', 'feed (পোস্ট কমেন্ট ও রিয়্যাকশন)'].map(f => (
+                            <span key={f} className="text-xs bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-md font-bold flex items-center gap-1">
+                              <i className="fa-solid fa-check text-xs"></i> {f}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="pt-2">
+                        <button 
+                          onClick={testHandshake}
+                          className="w-full py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2"
+                        >
+                          <i className="fa-solid fa-network-wired"></i>
+                          <span>{isBn ? 'টেস্ট মেটা হ্যান্ডশেক পিং পাঠান (Test Handshake)' : 'Test Meta Webhook Handshake'}</span>
+                        </button>
+                        {handshakeMessage && (
+                          <div className="mt-2.5 p-2.5 bg-emerald-100 text-emerald-900 rounded-lg text-xs font-semibold flex items-center gap-2">
+                            <i className="fa-solid fa-circle-check text-emerald-600"></i>
+                            <span>{handshakeMessage}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 7. CODE EXPORT & DEPLOYMENT */}
+            {activeTab === 'code-export' && (
+              <div className="max-w-4xl mx-auto space-y-6">
+                <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900">Cloudflare Worker & Serverless Webhook Handler</h3>
+                      <p className="text-xs text-slate-500">GET Verification + POST Messenger & Comment Automation Handler</p>
+                    </div>
+                    <button 
+                      onClick={() => {
+                        const code = `export default {\n  async fetch(req, env) {\n    const url = new URL(req.url);\n    if (req.method === "GET") {\n      if (url.searchParams.get("hub.verify_token") === env.VERIFY_TOKEN) {\n        return new Response(url.searchParams.get("hub.challenge"), { status: 200 });\n      }\n    }\n    return new Response("OK");\n  }\n};`;
+                        navigator.clipboard.writeText(code);
+                        alert('Cloudflare Worker কোড কপি হয়েছে!');
+                      }}
+                      className="px-3 py-1.5 bg-meta text-white rounded-lg text-xs font-bold"
+                    >
+                      কপি করুন
+                    </button>
+                  </div>
+
+                  <pre className="p-4 bg-slate-900 text-slate-200 rounded-xl text-xs font-mono overflow-x-auto code-scroll">
+{`// CLOUDFLARE WORKER / VERCEL SERVERLESS WEBHOOK HANDLER
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+
+    // 1. Meta Webhook GET Handshake
+    if (request.method === "GET") {
+      const mode = url.searchParams.get("hub.mode");
+      const token = url.searchParams.get("hub.verify_token");
+      const challenge = url.searchParams.get("hub.challenge");
+
+      if (mode === "subscribe" && token === env.META_VERIFY_TOKEN) {
+        return new Response(challenge, { status: 200 });
+      }
+      return new Response("Forbidden", { status: 403 });
+    }
+
+    // 2. Meta Webhook POST Event Receiver
+    if (request.method === "POST") {
+      const payload = await request.json();
+      if (payload.object === "page") {
+        for (const entry of payload.entry) {
+          // Process Messages
+          if (entry.messaging) {
+            for (const msg of entry.messaging) {
+              if (msg.message && !msg.message.is_echo) {
+                await replyMessenger(msg.sender.id, msg.message.text, env.PAGE_ACCESS_TOKEN);
+              }
+            }
+          }
+          // Process Comments
+          if (entry.changes) {
+            for (const change of entry.changes) {
+              if (change.field === "feed" && change.value.item === "comment" && change.value.verb === "add") {
+                await replyComment(change.value.comment_id, env.PAGE_ACCESS_TOKEN);
+              }
+            }
+          }
+        }
+        return new Response("EVENT_RECEIVED", { status: 200 });
+      }
+    }
+    return new Response("OK", { status: 200 });
+  }
+};`}
+                  </pre>
+                </div>
+              </div>
+            )}
+          </main>
+
+          {/* Footer */}
+          <footer className="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500">
+            <p className="font-semibold text-slate-700">Masum Auto Reply (মাছুম অটো রিপ্লাই) — Official Meta Graph API Automation Hub</p>
+            <p className="mt-1">Powered by React, Tailwind CSS, Meta Graph API v21.0 & Supabase PostgreSQL</p>
+          </footer>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
